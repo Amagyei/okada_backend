@@ -14,17 +14,17 @@ class Ride(models.Model):
     class StatusChoices(models.TextChoices):
         REQUESTED = 'REQUESTED', _('Requested')
         ACCEPTED = 'ACCEPTED', _('Accepted')
-        ON_ROUTE_TO_PICKUP = 'ON_ROUTE_TO_PICKUP', _('On Route to Pickup') # Added
-        ARRIVED_AT_PICKUP = 'ARRIVED_AT_PICKUP', _('Arrived at Pickup') # Added
-        ON_TRIP = 'ON_TRIP', _('On Trip') # Renamed from in_progress
+        ON_ROUTE_TO_PICKUP = 'ON_ROUTE_TO_PICKUP', _('On Route to Pickup')
+        ARRIVED_AT_PICKUP = 'ARRIVED_AT_PICKUP', _('Arrived at Pickup')
+        ON_TRIP = 'ON_TRIP', _('On Trip')
         COMPLETED = 'COMPLETED', _('Completed')
-        CANCELLED_BY_RIDER = 'CANCELLED_BY_RIDER', _('Cancelled by Rider') # Added specificity
-        CANCELLED_BY_DRIVER = 'CANCELLED_BY_DRIVER', _('Cancelled by Driver') # Added specificity
-        NO_DRIVER_FOUND = 'NO_DRIVER_FOUND', _('No Driver Found') # Added
+        CANCELLED_BY_RIDER = 'CANCELLED_BY_RIDER', _('Cancelled by Rider')
+        CANCELLED_BY_DRIVER = 'CANCELLED_BY_DRIVER', _('Cancelled by Driver')
+        NO_DRIVER_FOUND = 'NO_DRIVER_FOUND', _('No Driver Found')
 
     class PaymentStatusChoices(models.TextChoices):
         PENDING = 'PENDING', _('Pending')
-        PROCESSING = 'PROCESSING', _('Processing') # Optional intermediate state
+        PROCESSING = 'PROCESSING', _('Processing')
         COMPLETED = 'COMPLETED', _('Completed')
         FAILED = 'FAILED', _('Failed')
         REFUNDED = 'REFUNDED', _('Refunded')
@@ -32,27 +32,27 @@ class Ride(models.Model):
     # === Relationships ===
     rider = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL, # Consider PROTECT if rides are critical even if user deleted
+        on_delete=models.SET_NULL,
         related_name='rides_as_rider',
         limit_choices_to={'user_type': 'rider'},
-        null=True # Allow null temporarily if needed, but should be set
+        null=True
     )
     driver = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         related_name='rides_as_driver',
         limit_choices_to={'user_type': 'driver'},
-        null=True, # Driver is assigned later
+        null=True,
         blank=True
     )
 
     # === Location ===
-    pickup_location_lat = models.DecimalField(max_digits=10, decimal_places=7, help_text="Latitude of pickup location")
-    pickup_location_lng = models.DecimalField(max_digits=10, decimal_places=7, help_text="Longitude of pickup location")
+    pickup_location_lat = models.DecimalField(max_digits=16, decimal_places=7, help_text="Latitude of pickup location")
+    pickup_location_lng = models.DecimalField(max_digits=16, decimal_places=7, help_text="Longitude of pickup location")
     pickup_address = models.TextField(blank=True, null=True, help_text="Textual address or description of pickup")
 
-    destination_lat = models.DecimalField(max_digits=10, decimal_places=7, help_text="Latitude of destination")
-    destination_lng = models.DecimalField(max_digits=10, decimal_places=7, help_text="Longitude of destination")
+    destination_lat = models.DecimalField(max_digits=16, decimal_places=7, help_text="Latitude of destination")
+    destination_lng = models.DecimalField(max_digits=16, decimal_places=7, help_text="Longitude of destination")
     destination_address = models.TextField(blank=True, null=True, help_text="Textual address or description of destination")
 
     # === Status & Timestamps ===

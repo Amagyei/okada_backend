@@ -6,6 +6,7 @@ from .models import Ride, RideRating, SavedLocation # Removed RideLocation impor
 # Ensure UserPublicSerializer is correctly imported from your users app
 # It should expose basic, non-sensitive user info (id, name, maybe profile pic)
 from users.serializers import UserPublicSerializer
+from decimal import Decimal, ROUND_DOWN
 
 # --- SavedLocation Serializer ---
 class SavedLocationSerializer(serializers.ModelSerializer):
@@ -13,8 +14,8 @@ class SavedLocationSerializer(serializers.ModelSerializer):
     # User is automatically set based on authenticated request, make read-only
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     # Use DecimalField for latitude and longitude to match model
-    latitude = serializers.DecimalField(max_digits=10, decimal_places=7, coerce_to_string=False, required=True)
-    longitude = serializers.DecimalField(max_digits=10, decimal_places=7, coerce_to_string=False, required=True)
+    latitude = serializers.DecimalField(max_digits=14, decimal_places=7, coerce_to_string=False, required=True)
+    longitude = serializers.DecimalField(max_digits=14, decimal_places=7, coerce_to_string=False, required=True)
     location_type = serializers.ChoiceField(choices=SavedLocation.LocationTypes.choices, required=True)
     name = serializers.CharField(max_length=100, required=True)
     address = serializers.CharField(required=False, allow_blank=True, allow_null=True)
@@ -77,7 +78,7 @@ class RideSerializer(serializers.ModelSerializer):
             'id', 'rider', 'driver', 'status', 'status_display',
             'payment_status', 'payment_status_display',
             'pickup_address', 'destination_address', # Show addresses for quick view
-            'estimated_fare', 'actual_fare', # Show fares
+            'estimated_fare', 'estimated_fare', # Show fares
             'requested_at', 'completed_at', # Key timestamps
         )
         read_only_fields = fields # All fields read-only for list display
@@ -106,12 +107,22 @@ class RideDetailSerializer(RideSerializer): # Inherit from RideSerializer
 # Serializer for creating a new ride request (Rider input for create_ride_request action)
 class RideCreateSerializer(serializers.ModelSerializer):
     """Serializer for validating data when a Rider creates a ride request."""
+
+    def to_internal_value(self, data):
+        for field in ['pickup_location_lat', 'pickup_location_lng', 'destination_lat', 'destination_lng']:
+            if field in data:
+                try:
+                    data[field] = str(Decimal(data[field]).quantize(Decimal('0.0000001'), rounding=ROUND_DOWN))
+                except Exception:
+                    pass
+        return super().to_internal_value(data)
+    
     # Rider provides location details
-    pickup_location_lat = serializers.DecimalField(max_digits=10, decimal_places=7, required=True, coerce_to_string=False)
-    pickup_location_lng = serializers.DecimalField(max_digits=10, decimal_places=7, required=True, coerce_to_string=False)
+    pickup_location_lat = serializers.DecimalField(max_digits=16, decimal_places=7, required=True, coerce_to_string=False)
+    pickup_location_lng = serializers.DecimalField(max_digits=16, decimal_places=7, required=True, coerce_to_string=False)
     pickup_address = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=255) # Limit length
-    destination_lat = serializers.DecimalField(max_digits=10, decimal_places=7, required=True, coerce_to_string=False)
-    destination_lng = serializers.DecimalField(max_digits=10, decimal_places=7, required=True, coerce_to_string=False)
+    destination_lat = serializers.DecimalField(max_digits=16, decimal_places=7, required=True, coerce_to_string=False)
+    destination_lng = serializers.DecimalField(max_digits=16, decimal_places=7, required=True, coerce_to_string=False)
     destination_address = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=255) # Limit length
 
     class Meta:
@@ -159,7 +170,21 @@ class RideCompleteSerializer(serializers.ModelSerializer):
 # ---  Serializer for Fare Estimation Input ---
 class RideEstimateFareSerializer(serializers.Serializer):
     """Serializer for validating input coordinates for fare estimation."""
-    pickup_location_lat = serializers.DecimalField(max_digits=10, decimal_places=7, required=True, coerce_to_string=False)
-    pickup_location_lng = serializers.DecimalField(max_digits=10, decimal_places=7, required=True, coerce_to_string=False)
-    destination_lat = serializers.DecimalField(max_digits=10, decimal_places=7, required=True, coerce_to_string=False)
-    destination_lng = serializers.DecimalField(max_digits=10, decimal_places=7, required=True, coerce_to_string=False)
+
+    def _truncate_value(self, value):
+        return Decimal(value).quantize(Decimal('0.0000001'), rounding=ROUND_DOWN)
+    
+
+    pickup_location_lat = serializers.DecimalField(max_digits=16, decimal_places=7, required=True, coerce_to_string=False)
+    pickup_location_lng = serializers.DecimalField(max_digits=16, decimal_places=7, required=True, coerce_to_string=False)
+    destination_lat = serializers.DecimalField(max_digits=16, decimal_places=7, required=True, coerce_to_string=False)
+    destination_lng = serializers.DecimalField(max_digits=16, decimal_places=7, required=True, coerce_to_string=False)
+
+    def to_internal_value(self, data):
+        for field in ['pickup_location_lat', 'pickup_location_lng', 'destination_lat', 'destination_lng']:
+            if field in data:
+                try:
+                    data[field] = str(Decimal(data[field]).quantize(Decimal('0.0000001'), rounding=ROUND_DOWN))
+                except Exception:
+                    pass
+        return super().to_internal_value(data)

@@ -35,16 +35,6 @@ class IsOwner(permissions.BasePermission):
         # Example: return obj.user == request.user
         return True # Replace with actual logic
 
-# Remove these if importing from users.permissions
-# class IsRiderUser(permissions.BasePermission):
-#     """Placeholder: Allow only users with user_type='rider'."""
-#     def has_permission(self, request, view):
-#         return request.user.is_authenticated and request.user.user_type == 'rider'
-
-# class IsDriverUser(permissions.BasePermission):
-#     """Placeholder: Allow only users with user_type='driver'."""
-#     def has_permission(self, request, view):
-#         return request.user.is_authenticated and request.user.user_type == 'driver'
 
 class IsAssignedDriverOrReadOnly(permissions.BasePermission):
     """Placeholder: Allow assigned driver to modify, others read-only."""
@@ -143,7 +133,7 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
         # Explicit permission check (alternative to action-level permission)
         if not request.user.user_type == 'rider':
              return Response({"detail": "Only riders can create ride requests."}, status=status.HTTP_403_FORBIDDEN)
-
+        print(request.data)
         serializer = self.get_serializer(data=request.data) # Gets RideCreateSerializer
         serializer.is_valid(raise_exception=True)
 
@@ -152,8 +142,7 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
         # Save the ride request, associating rider and setting status/fare
         ride = serializer.save(
             rider=request.user,
-            status=Ride.StatusChoices.REQUESTED,
-            
+            status=Ride.StatusChoices.REQUESTED,   
         )
 
         # Return detailed data for the newly created ride
@@ -168,12 +157,11 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
         Expects: {'pickup_location_lat': ..., 'pickup_location_lng': ..., 'destination_lat': ..., 'destination_lng': ...}
         Returns: {'estimated_fare': ...}
         """
-        serializer = self.get_serializer(data=request.data) # Gets RideEstimateFareSerializer
+        serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
         try:
-            # Call the utility function from rides/utils.py
             estimated_fare = get_estimated_fare(
                 pickup_lat=data['pickup_location_lat'],
                 pickup_lng=data['pickup_location_lng'],
@@ -181,7 +169,6 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
                 dest_lng=data['destination_lng']
             )
             if estimated_fare is None:
-                # Handle cases where calculation might fail internally in the util
                 return Response({"detail": "Could not calculate fare at this time."}, status=status.HTTP_400_BAD_REQUEST)
 
             # Return just the fare value
