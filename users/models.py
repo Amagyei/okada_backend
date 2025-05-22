@@ -10,8 +10,10 @@ class User(AbstractUser):
     
     
     user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='rider')
-    phone_number = models.CharField(max_length=15)
+    phone_number = models.CharField(max_length=15, unique=True)
     profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
+    ghana_card_number = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    ghana_card_image = models.ImageField(upload_to='ghana_cards/', null=True, blank=True)
     is_phone_verified = models.BooleanField(default=False)
     is_email_verified = models.BooleanField(default=False)
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)

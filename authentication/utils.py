@@ -1,4 +1,4 @@
-# authentication/utils.py (Create this file)
+# authentication/utils.py
 
 import random
 import string
@@ -44,7 +44,9 @@ def send_otp_sms(phone_number):
     try:
         response = client.post(ARKESEL_OTP_GENERATE_URL, headers=headers, json=request_body)
         print(response)
-        response.raise_for_status() 
+        response.raise_for_status()
+        print(f"Arkesel OTP Generate Response for {phone_number}: {response.status_code} - {response.text}")
+        
        
         return response.status_code == 200
     except requests.exceptions.RequestException as e:

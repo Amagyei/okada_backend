@@ -1,5 +1,6 @@
 from django.utils.translation import gettext_lazy as _
 from datetime import timedelta
+from django.forms.models import model_to_dict
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -131,7 +132,8 @@ class OTPVerificationSerializer(PhoneSerializer):
 
         try:
             verification = UserVerification.objects.get(user=user)
-            print(f"Verification record found: {verification}")  # Debugging line
+            verification_data = model_to_dict(verification)
+            print(f"Verification record found: {verification_data}")  # Debugging line
             # expiry_time = verification.phone_verification_sent_at + timedelta(minutes=10)
             # print(f"OTP expiry time: {expiry_time}")  # Debugging line
             # if verification.phone_verification_code != otp_code:
@@ -139,7 +141,7 @@ class OTPVerificationSerializer(PhoneSerializer):
             # if timezone.now() > expiry_time:
             #     raise serializers.ValidationError("OTP code has expired.")
 
-            self.context['verification'] = verification
+            self.context['verification'] = verification_data
         except UserVerification.DoesNotExist:
             raise serializers.ValidationError("Verification record not found. Please request a new OTP.")
         except TypeError:  

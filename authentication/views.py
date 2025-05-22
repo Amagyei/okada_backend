@@ -74,7 +74,7 @@ class OTPRequestView(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         # print the user requesting
-         
+        print(f"User requesting OTP: {request.user}")
         serializer = self.get_serializer(data=request.data)
 
         serializer.is_valid(raise_exception=True)
@@ -82,8 +82,9 @@ class OTPRequestView(generics.GenericAPIView):
         cache_key = f"otp_rate_limit_{phone_number}"
         if cache.get(cache_key):
             return Response({"detail": "OTP request limit exceeded. Please try again later."}, status=status.HTTP_429_TOO_MANY_REQUESTS)
-
+        print(f"Sending OTP to {phone_number}")
         success = send_otp_sms(phone_number)
+        print(f"OTP sent: {success}")
         if success:
             cache.set(cache_key, True, timeout=OTP_RATE_LIMIT_DURATION)
             return Response({"message": "OTP sent successfully."}, status=status.HTTP_200_OK)
@@ -147,6 +148,7 @@ class PasswordResetConfirmView(generics.GenericAPIView):
         # Serializer's save method handles password update & clearing OTP
         serializer.save()
         return Response({"message": "Password has been reset successfully."}, status=status.HTTP_200_OK)
+
 
 class LogoutView(generics.GenericAPIView):
     """Blacklists the provided refresh token."""

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User, DriverDocument, UserVerification
+from .models import User, DriverDocument,  UserVerification
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):

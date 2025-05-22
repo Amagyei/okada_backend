@@ -1,4 +1,5 @@
 from rest_framework import viewsets, status, generics
+from rest_framework.views import APIView
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -48,8 +49,8 @@ class UserViewSet(viewsets.ModelViewSet):
         # Create verification record after user is saved
         try:
             verification = UserVerification.objects.create(user=user)
-            # Send OTP immediately after registration
-            send_otp_sms(verification) # Call the utility function
+            print(f"Verification record created: {verification.phone_number}")
+            send_otp_sms(user.phone_number) # Call the utility function
 
         except Exception as e:
             print(f"Error creating verification/sending OTP for {user.username}: {e}")
@@ -67,22 +68,55 @@ class UserViewSet(viewsets.ModelViewSet):
         }
         return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
-class UserProfileView(generics.RetrieveUpdateAPIView): # Allows GET (retrieve) and PATCH/PUT (update)
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        user.set_password(serializer.validated_data['new_password'])
+        user.save()
+        return Response({"detail": "Password updated successfully."}, status=status.HTTP_200_OK)
+    
+
+
+class UserProfileView(generics.RetrieveUpdateAPIView):
     """
-    API view for retrieving and updating the authenticated user's profile.
-    Uses '/api/users/me/' URL.
+    Allows authenticated users to retrieve and partially update their profile.
+    Ghana Card details can only be set once and become immutable.
     """
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
-        # Returns the user associated with the current request token
-        print(self.request.user)
         return self.request.user
 
-    # Optional: If you want profile updates via PATCH/PUT on /users/me/
-    # def perform_update(self, serializer):
-    #     serializer.save(user=self.request.user) # Ensure user isn't changed
+    def patch(self, request, *args, **kwargs):
+        user = self.get_object()
+        data = request.data.copy()
+
+        # Enforce immutability for Ghana Card fields
+        if user.ghana_card_number and data.get("ghana_card_number"):
+            if data["ghana_card_number"] != user.ghana_card_number:
+                return Response(
+                    {"ghana_card_number": ["Ghana Card number cannot be changed once set."]},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        if user.ghana_card_image and data.get("ghana_card_image"):
+            return Response(
+                {"ghana_card_image": ["Ghana Card image cannot be changed once uploaded."]},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = self.get_serializer(user, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
 
 class DriverProfileViewSet(viewsets.ModelViewSet):
     serializer_class = DriverProfileSerializer
