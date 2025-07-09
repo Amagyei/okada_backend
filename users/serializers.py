@@ -42,10 +42,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = User
         # Ensure all fields needed at signup are listed
         fields = (
-<<<<<<< HEAD
             'phone_number', 'password', 'email', 'first_name', 'last_name', 'user_type'
-=======
->>>>>>> 8bab12e (task)
         )
         
     

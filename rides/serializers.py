@@ -98,16 +98,10 @@ class RideSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'rider', 'driver', 'status', 'status_display',
             'payment_status', 'payment_status_display',
-<<<<<<< HEAD
             'pickup_address', 'destination_address',
             'pickup_lat', 'pickup_lng', 'destination_lat', 'destination_lng',
             'estimated_fare', 'base_fare', 'duration_fare', 'distance_fare', 'total_fare',
             'requested_at', 'completed_at',
-=======
-            'pickup_address', 'destination_address', # Show addresses for quick view
-            'estimated_fare', 'base_fare', 'duration_fare', 'distance_fare', 'total_fare', # Show fares
-            'requested_at', 'completed_at', # Key timestamps
->>>>>>> 8bab12e (task)
         )
         read_only_fields = fields
 
@@ -447,8 +441,4 @@ class DriverSearchSerializer(serializers.Serializer):
         choices=DriverAvailability.ServiceArea.choices,
         required=False
     )
-<<<<<<< HEAD
     limit = serializers.IntegerField(default=10, min_value=1, max_value=50)
-=======
-    limit = serializers.IntegerField(default=10, min_value=1, max_value=50)
->>>>>>> 8bab12e (task)

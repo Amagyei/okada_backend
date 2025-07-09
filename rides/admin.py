@@ -51,8 +51,4 @@ class DriverAvailabilityAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         """Optimize queryset with select_related for better performance."""
-<<<<<<< HEAD
         return super().get_queryset(request).select_related('driver')
-=======
-        return super().get_queryset(request).select_related('driver')
->>>>>>> 8bab12e (task)

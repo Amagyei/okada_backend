@@ -1,21 +1,12 @@
-<<<<<<< HEAD
 # settings.py
 
-=======
->>>>>>> 8bab12e (task)
 from decimal import Decimal
 from pathlib import Path
 from datetime import timedelta
 import os
-<<<<<<< HEAD
 import json # For parsing Firebase credentials from environment variable (even if not used in local dev)
 import dj_database_url # For parsing DATABASE_URL (useful if you set it locally)
 from dotenv import load_dotenv # Crucial for loading .env file locally
-=======
-from dotenv import load_dotenv
-import firebase_admin
-from firebase_admin import credentials
->>>>>>> 8bab12e (task)
 
 # Load environment variables from .env file.
 # This makes variables in your .env file available via os.getenv()
@@ -68,39 +59,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-<<<<<<< HEAD
     'django.contrib.gis', # Required for PostGIS
     'django_celery_beat',
 
-=======
-    'django.contrib.gis',
-    'django_celery_beat',
-
-    
->>>>>>> 8bab12e (task)
     # Third party apps
     'rest_framework',
     'corsheaders',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'channels',
-<<<<<<< HEAD
     'channels_redis', # For Redis channel layer
     'whitenoise.runserver_nostatic', # For serving static files in development with `runserver`
     # 'storages', # Only needed if you plan to use DigitalOcean Spaces for media locally
-=======
-    'channels_redis',
- 
-    # Local apps
-    'authentication',
-    'users',
-    'rides.apps.RidesConfig',
-    'payments',
-    'notifications',
-    'rides',
-    'payments',
-    # 'analytics',
->>>>>>> 8bab12e (task)
 ]
 
 # ==============================================================================
@@ -148,7 +118,6 @@ TEMPLATES = [
     },
 ]
 
-<<<<<<< HEAD
 # ==============================================================================
 # ASGI & WSGI Applications
 # ==============================================================================
@@ -188,40 +157,6 @@ if DEBUG:
 # ==============================================================================
 # Password Validation
 # ==============================================================================
-=======
-ASGI_APPLICATION = 'okada_backend.asgi.application'
-
-# GDAL
-GDAL_LIBRARY_PATH = os.environ.get(
-    "GDAL_LIBRARY_PATH",
-    "/opt/homebrew/opt/gdal/lib/libgdal.dylib"
-)
-
-# GEOS
-GEOS_LIBRARY_PATH = os.environ.get(
-    "GEOS_LIBRARY_PATH",
-    "/opt/homebrew/opt/geos/lib/libgeos_c.dylib"
-)
-
-# PROJ (so PostGIS can find datum/CRS files)
-PROJ_LIB = os.environ.get(
-    "PROJ_LIB",
-    os.path.join(os.popen("brew --prefix proj").read().strip(), "share/proj")
-)
-
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT'),
-    }
-}
-WSGI_APPLICATION = 'okada_backend.wsgi.application'
->>>>>>> 8bab12e (task)
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -396,21 +331,12 @@ LOGGING = {
         },
     },
     'root': {
-<<<<<<< HEAD
         'handlers': ['console'],
         'level': 'INFO',
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
-=======
-        'handlers': ['console'], # Add 'file' for production
-        'level': 'INFO', # Change level as needed (DEBUG, WARNING, ERROR)
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'], # Add 'file' for production
->>>>>>> 8bab12e (task)
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': False,
         },

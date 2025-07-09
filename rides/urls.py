@@ -39,8 +39,4 @@ urlpatterns = [
 # /api/driver-availability/set_planned_route/ (POST: set_planned_route action)
 #
 # /api/driver-search/find_nearby_drivers/ (POST: find_nearby_drivers action)
-<<<<<<< HEAD
 # /api/driver-search/find_drivers_on_route/ (POST: find_drivers_on_route action)
-=======
-# /api/driver-search/find_drivers_on_route/ (POST: find_drivers_on_route action)
->>>>>>> 8bab12e (task)
