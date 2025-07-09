@@ -125,4 +125,4 @@ celerybeat.pid
 # mypy
 .mypy_cache/
 .dmypy.json
-dmypy.json
+dmypy.json.DS_Store
