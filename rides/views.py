@@ -87,7 +87,7 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
         """
         Filter rides based on user type.
         - Riders see their requested/ongoing rides.
-        - Drivers see rides assigned to them AND available rides (requested, unassigned, within 15km, ordered by proximity).
+            - Drivers see rides assigned to them AND available rides (requested, unassigned, within 15km, ordered by proximity).
         """
         user = self.request.user
         if not user.is_authenticated:

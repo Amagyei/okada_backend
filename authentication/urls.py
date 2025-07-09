@@ -18,6 +18,10 @@ app_name = 'authentication'
 urlpatterns = [
     # JWT Token endpoints
     path('token/obtain/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'), # Username/password
+<<<<<<< HEAD
+=======
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), # Use simplejwt view
+>>>>>>> refs/remotes/origin/main
 
     # Custom Authentication endpoints
     path('login/', UserLoginView.as_view(), name='phone_login'),

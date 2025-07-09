@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 # authentication/views.py
+=======
+>>>>>>> refs/remotes/origin/main
 from django.shortcuts import render
 from rest_framework import status, views, generics
 from rest_framework.response import Response
@@ -40,6 +43,10 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 class UserLoginView(views.APIView):
+<<<<<<< HEAD
+=======
+    """ takes phone_number and password and returns access and refresh tokens"""
+>>>>>>> refs/remotes/origin/main
     permission_classes = (AllowAny,)
     serializer_class = UserLoginSerializer
 
@@ -48,6 +55,10 @@ class UserLoginView(views.APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         refresh = RefreshToken.for_user(user)
+<<<<<<< HEAD
+=======
+
+>>>>>>> refs/remotes/origin/main
         
         response_data = {
             'refresh': str(refresh),
