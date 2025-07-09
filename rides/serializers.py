@@ -2,7 +2,7 @@
 
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
-from .models import Ride, RideRating, SavedLocation # Removed RideLocation import
+from .models import Ride, RideRating, SavedLocation, DriverAvailability # Added DriverAvailability import
 # Ensure UserPublicSerializer is correctly imported from your users app
 # It should expose basic, non-sensitive user info (id, name, maybe profile pic)
 from users.serializers import UserPublicSerializer
@@ -78,11 +78,7 @@ class RideSerializer(serializers.ModelSerializer):
             'id', 'rider', 'driver', 'status', 'status_display',
             'payment_status', 'payment_status_display',
             'pickup_address', 'destination_address', # Show addresses for quick view
-<<<<<<< HEAD
             'estimated_fare', 'base_fare', 'duration_fare', 'distance_fare', 'total_fare', # Show fares
-=======
-            'estimated_fare', 'estimated_fare', # Show fares
->>>>>>> refs/remotes/origin/main
             'requested_at', 'completed_at', # Key timestamps
         )
         read_only_fields = fields # All fields read-only for list display
@@ -192,3 +188,222 @@ class RideEstimateFareSerializer(serializers.Serializer):
                 except Exception:
                     pass
         return super().to_internal_value(data)
+
+
+# --- DriverAvailability Serializers ---
+
+class DriverAvailabilitySerializer(serializers.ModelSerializer):
+    """Basic serializer for displaying driver availability information."""
+    driver = UserPublicSerializer(read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    service_area_display = serializers.CharField(source='get_service_area_display', read_only=True)
+    
+    # Location fields
+    current_lat = serializers.SerializerMethodField()
+    current_lng = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = DriverAvailability
+        fields = (
+            'id', 'driver', 'status', 'status_display',
+            'current_lat', 'current_lng', 'current_address',
+            'service_area', 'service_area_display', 'max_distance_km',
+            'average_rating', 'total_rides_completed',
+            'last_location_update', 'last_online_at', 'last_offline_at',
+            'is_available_for_rides', 'is_planned_route_active'
+        )
+        read_only_fields = fields
+
+    def get_current_lat(self, obj):
+        """Extract latitude from PointField"""
+        if obj.current_location:
+            return float(obj.current_location.y)
+        return None
+
+    def get_current_lng(self, obj):
+        """Extract longitude from PointField"""
+        if obj.current_location:
+            return float(obj.current_location.x)
+        return None
+
+
+class DriverAvailabilityUpdateSerializer(serializers.ModelSerializer):
+    """Serializer for updating driver availability status and location."""
+    
+    # Location update fields
+    current_lat = serializers.DecimalField(
+        max_digits=16, 
+        decimal_places=7, 
+        required=False, 
+        coerce_to_string=False
+    )
+    current_lng = serializers.DecimalField(
+        max_digits=16, 
+        decimal_places=7, 
+        required=False, 
+        coerce_to_string=False
+    )
+    current_address = serializers.CharField(required=False, allow_blank=True)
+    
+    # Status update
+    status = serializers.ChoiceField(
+        choices=DriverAvailability.AvailabilityStatus.choices,
+        required=False
+    )
+    
+    # Planned route fields
+    planned_destination_lat = serializers.DecimalField(
+        max_digits=16, 
+        decimal_places=7, 
+        required=False, 
+        coerce_to_string=False
+    )
+    planned_destination_lng = serializers.DecimalField(
+        max_digits=16, 
+        decimal_places=7, 
+        required=False, 
+        coerce_to_string=False
+    )
+    planned_destination_address = serializers.CharField(required=False, allow_blank=True)
+    planned_departure_time = serializers.DateTimeField(required=False)
+    planned_arrival_time = serializers.DateTimeField(required=False)
+
+    class Meta:
+        model = DriverAvailability
+        fields = (
+            'status', 'current_lat', 'current_lng', 'current_address',
+            'planned_destination_lat', 'planned_destination_lng', 
+            'planned_destination_address', 'planned_departure_time', 
+            'planned_arrival_time'
+        )
+
+    def update(self, instance, validated_data):
+        """Custom update method to handle location updates properly."""
+        from django.contrib.gis.geos import Point
+        
+        # Handle location update
+        if 'current_lat' in validated_data and 'current_lng' in validated_data:
+            lat = validated_data.pop('current_lat')
+            lng = validated_data.pop('current_lng')
+            address = validated_data.pop('current_address', None)
+            
+            # Update location using the model method
+            instance.update_location(float(lat), float(lng), address)
+        
+        # Handle planned route coordinates
+        if 'planned_destination_lat' in validated_data and 'planned_destination_lng' in validated_data:
+            # Convert to float for storage
+            validated_data['planned_destination_lat'] = float(validated_data['planned_destination_lat'])
+            validated_data['planned_destination_lng'] = float(validated_data['planned_destination_lng'])
+        
+        # Update other fields normally
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        
+        instance.save()
+        return instance
+
+
+class DriverAvailabilityCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating driver availability profile."""
+    
+    # Location fields
+    current_lat = serializers.DecimalField(
+        max_digits=16, 
+        decimal_places=7, 
+        required=False, 
+        coerce_to_string=False
+    )
+    current_lng = serializers.DecimalField(
+        max_digits=16, 
+        decimal_places=7, 
+        required=False, 
+        coerce_to_string=False
+    )
+    
+    # Planned route fields
+    planned_destination_lat = serializers.DecimalField(
+        max_digits=16, 
+        decimal_places=7, 
+        required=False, 
+        coerce_to_string=False
+    )
+    planned_destination_lng = serializers.DecimalField(
+        max_digits=16, 
+        decimal_places=7, 
+        required=False, 
+        coerce_to_string=False
+    )
+
+    class Meta:
+        model = DriverAvailability
+        fields = (
+            'service_area', 'max_distance_km', 'is_available_24_7',
+            'preferred_start_time', 'preferred_end_time',
+            'preferred_ride_types', 'minimum_fare_preference',
+            'current_lat', 'current_lng', 'current_address',
+            'planned_destination_lat', 'planned_destination_lng',
+            'planned_destination_address', 'planned_departure_time',
+            'planned_arrival_time'
+        )
+        read_only_fields = ('driver',)  # Driver is set from request.user
+
+    def create(self, validated_data):
+        """Custom create method to handle location fields properly."""
+        from django.contrib.gis.geos import Point
+        
+        # Handle current location
+        current_lat = validated_data.pop('current_lat', None)
+        current_lng = validated_data.pop('current_lng', None)
+        
+        if current_lat and current_lng:
+            validated_data['current_location'] = Point(
+                float(current_lng), float(current_lat), srid=4326
+            )
+        
+        # Handle planned destination coordinates
+        planned_lat = validated_data.pop('planned_destination_lat', None)
+        planned_lng = validated_data.pop('planned_destination_lng', None)
+        
+        if planned_lat and planned_lng:
+            validated_data['planned_destination_lat'] = float(planned_lat)
+            validated_data['planned_destination_lng'] = float(planned_lng)
+        
+        # Set driver from request
+        validated_data['driver'] = self.context['request'].user
+        
+        return super().create(validated_data)
+
+
+class DriverSearchSerializer(serializers.Serializer):
+    """Serializer for searching available drivers near a location."""
+    
+    pickup_lat = serializers.DecimalField(
+        max_digits=16, 
+        decimal_places=7, 
+        required=True, 
+        coerce_to_string=False
+    )
+    pickup_lng = serializers.DecimalField(
+        max_digits=16, 
+        decimal_places=7, 
+        required=True, 
+        coerce_to_string=False
+    )
+    max_distance_km = serializers.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=10.00,
+        coerce_to_string=False
+    )
+    min_rating = serializers.DecimalField(
+        max_digits=3, 
+        decimal_places=2, 
+        required=False,
+        coerce_to_string=False
+    )
+    service_area = serializers.ChoiceField(
+        choices=DriverAvailability.ServiceArea.choices,
+        required=False
+    )
+    limit = serializers.IntegerField(default=10, min_value=1, max_value=50)

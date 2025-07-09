@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # okada_backend/asgi.py
 import os
 import django
@@ -24,24 +23,3 @@ base_asgi_app = ProtocolTypeRouter({
 
 # Wrap the entire ASGI app with JWT middleware
 application = JWTAuthMiddleware(base_asgi_app)
-
-
-
-=======
-"""
-ASGI config for okada_backend project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.1/howto/deployment/asgi/
-"""
-
-import os
-
-from django.core.asgi import get_asgi_application
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "okada_backend.settings")
-
-application = get_asgi_application()
->>>>>>> refs/remotes/origin/main

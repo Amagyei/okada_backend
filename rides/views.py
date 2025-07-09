@@ -8,7 +8,6 @@ from django.utils import timezone
 from rest_framework import viewsets, status, mixins, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
-<<<<<<< HEAD
 import logging
 
 # --- Notification imports ---
@@ -19,16 +18,16 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
 User = get_user_model()
-=======
->>>>>>> refs/remotes/origin/main
 
 # Import models from the current app
-from .models import Ride, RideRating, SavedLocation
+from .models import Ride, RideRating, SavedLocation, DriverAvailability
 # Import serializers from the current app
 from .serializers import (
     RideSerializer, RideDetailSerializer, RideCreateSerializer,
     RideCancelSerializer, RideCompleteSerializer,
-    RideRatingSerializer, SavedLocationSerializer, RideEstimateFareSerializer
+    RideRatingSerializer, SavedLocationSerializer, RideEstimateFareSerializer,
+    DriverAvailabilitySerializer, DriverAvailabilityUpdateSerializer, 
+    DriverAvailabilityCreateSerializer, DriverSearchSerializer
 )
 
 from .utils import get_estimated_fare # Import utility function for fare estimation
@@ -42,16 +41,6 @@ from users.permissions import IsRider, IsDriver
 # Placeholder Permissions (Remove or replace with actual imports from permissions.py)
 # It's better to define these in users/permissions.py and rides/permissions.py
 # and import them here. Keeping them here temporarily for completeness if not created yet.
-<<<<<<< HEAD
-
-
-# 
-# 
-# TODO: notify driver when rider calclesla dn viseversa 
-  
-#   wrap fcm send calls in a try except and log failures 
-=======
->>>>>>> refs/remotes/origin/main
 class IsOwner(permissions.BasePermission):
     """Placeholder: Allow only owner of object."""
     def has_object_permission(self, request, view, obj):
@@ -91,11 +80,7 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
     """
     serializer_class = RideSerializer # Default for list view
     permission_classes = [permissions.IsAuthenticated] # Base permission for all actions
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> refs/remotes/origin/main
     def get_queryset(self):
         """
         Filter rides based on user type.
@@ -143,13 +128,8 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
             'cancel_ride': RideCancelSerializer,
             'rate_ride': RideRatingSerializer,
             'complete_trip': RideCompleteSerializer,
-<<<<<<< HEAD
-        }
-=======
-
         }
         # Return specific serializer for the action, or default (RideSerializer for list)
->>>>>>> refs/remotes/origin/main
         return action_serializers.get(self.action, super().get_serializer_class())
 
     # --- Rider Actions ---
@@ -168,18 +148,13 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
         serializer = self.get_serializer(data=request.data) # Gets RideCreateSerializer
         serializer.is_valid(raise_exception=True)
 
-<<<<<<< HEAD
-=======
        
-
->>>>>>> refs/remotes/origin/main
         # Save the ride request, associating rider and setting status/fare
         ride = serializer.save(
             rider=request.user,
             status=Ride.StatusChoices.REQUESTED,   
         )
 
-<<<<<<< HEAD
         # Notify all drivers about new ride request via FCM
         # TODO: NOTIFY ONLY NEARBY DRIVERS 
         for driver in User.objects.filter(user_type='driver').exclude(fcm_token__isnull=True).exclude(fcm_token=''):
@@ -241,8 +216,6 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
         except Exception as e:
             logging.error(f"Failed to send WebSocket notification for ride {ride.id}: {e}")
 
-=======
->>>>>>> refs/remotes/origin/main
         # Return detailed data for the newly created ride
         response_serializer = RideDetailSerializer(ride, context={'request': request})
         headers = self.get_success_headers(response_serializer.data)
@@ -311,7 +284,6 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
             cancellation_fee = cancellation_fee,
         )
 
-<<<<<<< HEAD
         # Notify assigned driver if rider cancels
         if new_status == Ride.StatusChoices.CANCELLED_BY_RIDER and ride.driver and ride.driver.fcm_token:
             try:
@@ -357,8 +329,6 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
         except Exception as e:
             logging.error(f"Failed to send WebSocket notification for cancelled ride {ride.id}: {e}")
 
-=======
->>>>>>> refs/remotes/origin/main
         # Return updated ride details
         response_serializer = RideDetailSerializer(ride, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -395,7 +365,6 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
             ride = ride_to_update
 
         # TODO: Send notification to Rider that ride was accepted
-<<<<<<< HEAD
         # Notify Rider that ride was accepted
         if ride.rider and ride.rider.fcm_token:
             try:
@@ -427,8 +396,6 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
             logging.info(f"WebSocket notification sent to drivers group for accepted ride {ride.id}")
         except Exception as e:
             logging.error(f"Failed to send WebSocket notification for accepted ride {ride.id}: {e}")
-=======
->>>>>>> refs/remotes/origin/main
 
         response_serializer = RideDetailSerializer(ride, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -451,59 +418,11 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
 
          # Define valid transitions and associated actions/timestamps
          if new_status == Ride.StatusChoices.ON_ROUTE_TO_PICKUP and ride.status == Ride.StatusChoices.ACCEPTED:
-<<<<<<< HEAD
-              valid_transition = True
-              # Notify Rider that driver is en route
-              if ride.rider and ride.rider.fcm_token:
-                  try:
-                      result = send_fcm_notification_task.delay(
-                          ride.rider.id,
-                          title="Driver En Route",
-                          body=f"Your driver is on the way for ride {ride.id}.",
-                          data_payload={'ride_id': str(ride.id), 'type': 'DRIVER_EN_ROUTE'}
-                      )
-                      logging.info(f"Notification task dispatched for rider {ride.rider.id}: {result}")
-                  except Exception as e:
-                      logging.error(f"Failed to dispatch notification for rider {ride.rider.id}: {e}")
-         elif new_status == Ride.StatusChoices.ARRIVED_AT_PICKUP and ride.status == Ride.StatusChoices.ON_ROUTE_TO_PICKUP:
-              ride.arrived_at_pickup_at = now
-              update_fields.append('arrived_at_pickup_at')
-              valid_transition = True
-              # Notify Rider that driver has arrived
-              if ride.rider and ride.rider.fcm_token:
-                  try:
-                      result = send_fcm_notification_task.delay(
-                          ride.rider.id,
-                          title="Driver Arrived",
-                          body=f"Your driver has arrived at pickup location for ride {ride.id}.",
-                          data_payload={'ride_id': str(ride.id), 'type': 'DRIVER_ARRIVED'}
-                      )
-                      logging.info(f"Notification task dispatched for rider {ride.rider.id}: {result}")
-                  except Exception as e:
-                      logging.error(f"Failed to dispatch notification for rider {ride.rider.id}: {e}")
-         elif new_status == Ride.StatusChoices.ON_TRIP and ride.status == Ride.StatusChoices.ARRIVED_AT_PICKUP:
-              ride.trip_started_at = now
-              update_fields.append('trip_started_at')
-              valid_transition = True
-              # Notify Rider that trip has started
-              if ride.rider and ride.rider.fcm_token:
-                  try:
-                      result = send_fcm_notification_task.delay(
-                          ride.rider.id,
-                          title="Trip Started",
-                          body=f"Your trip {ride.id} has started.",
-                          data_payload={'ride_id': str(ride.id), 'type': 'TRIP_STARTED'}
-                      )
-                      logging.info(f"Notification task dispatched for rider {ride.rider.id}: {result}")
-                  except Exception as e:
-                      logging.error(f"Failed to dispatch notification for rider {ride.rider.id}: {e}")
-=======
               valid_transition = True; print("TODO: Notify Rider - Driver En Route")
          elif new_status == Ride.StatusChoices.ARRIVED_AT_PICKUP and ride.status == Ride.StatusChoices.ON_ROUTE_TO_PICKUP:
               ride.arrived_at_pickup_at = now; update_fields.append('arrived_at_pickup_at'); valid_transition = True; print("TODO: Notify Rider - Driver Arrived")
          elif new_status == Ride.StatusChoices.ON_TRIP and ride.status == Ride.StatusChoices.ARRIVED_AT_PICKUP:
               ride.trip_started_at = now; update_fields.append('trip_started_at'); valid_transition = True; print("TODO: Notify Rider - Trip Started")
->>>>>>> refs/remotes/origin/main
 
          if not valid_transition:
              if new_status == ride.status: return Response({"detail": f"Ride is already in '{ride.get_status_display()}' state."}, status=status.HTTP_400_BAD_REQUEST)
@@ -552,22 +471,7 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
 
         # TODO: Trigger payment processing (e.g., queue Celery task)
         print("TODO: Trigger payment processing.")
-<<<<<<< HEAD
-        # Notify Rider that trip is completed
-        if ride.rider and ride.rider.fcm_token:
-            try:
-                result = send_fcm_notification_task.delay(
-                    ride.rider.id,
-                    title="Trip Completed",
-                    body=f"Your trip {ride.id} is complete. Fare: GH₵ {final_fare:.2f}.",
-                    data_payload={'ride_id': str(ride.id), 'type': 'TRIP_COMPLETED'}
-                )
-                logging.info(f"Notification task dispatched for rider {ride.rider.id}: {result}")
-            except Exception as e:
-                logging.error(f"Failed to dispatch notification for rider {ride.rider.id}: {e}")
-=======
         # TODO: Send notification to Rider (Trip Completed, Fare)
->>>>>>> refs/remotes/origin/main
 
         response_serializer = RideDetailSerializer(ride, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -629,3 +533,220 @@ class SavedLocationViewSet(viewsets.ModelViewSet):
 
     # Default update/destroy methods provided by ModelViewSet are sufficient
     # as get_queryset ensures users can only affect their own locations.
+
+
+# --- DriverAvailability ViewSet ---
+class DriverAvailabilityViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing driver availability, status, and location updates.
+    Provides CRUD operations for driver availability profiles.
+    """
+    permission_classes = [permissions.IsAuthenticated, IsDriver]
+    
+    def get_queryset(self):
+        """Return availability for the current driver user."""
+        return DriverAvailability.objects.filter(driver=self.request.user)
+    
+    def get_serializer_class(self):
+        """Return appropriate serializer class based on action."""
+        if self.action == 'create':
+            return DriverAvailabilityCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return DriverAvailabilityUpdateSerializer
+        else:
+            return DriverAvailabilitySerializer
+    
+    def perform_create(self, serializer):
+        """Automatically associate the availability with the current driver."""
+        serializer.save(driver=self.request.user)
+    
+    @action(detail=False, methods=['post'])
+    def go_online(self, request):
+        """Action for driver to go online and start accepting rides."""
+        availability, created = DriverAvailability.objects.get_or_create(
+            driver=request.user,
+            defaults={'status': DriverAvailability.AvailabilityStatus.ONLINE}
+        )
+        
+        if not created:
+            availability.go_online()
+        
+        serializer = self.get_serializer(availability)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['post'])
+    def go_offline(self, request):
+        """Action for driver to go offline and stop accepting rides."""
+        try:
+            availability = DriverAvailability.objects.get(driver=request.user)
+            availability.go_offline()
+            serializer = self.get_serializer(availability)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except DriverAvailability.DoesNotExist:
+            return Response(
+                {"detail": "No availability profile found. Create one first."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+    
+    @action(detail=False, methods=['post'])
+    def update_location(self, request):
+        """Action for driver to update their current location."""
+        serializer = DriverAvailabilityUpdateSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        
+        try:
+            availability = DriverAvailability.objects.get(driver=request.user)
+            updated_availability = serializer.update(availability, serializer.validated_data)
+            response_serializer = DriverAvailabilitySerializer(updated_availability)
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
+        except DriverAvailability.DoesNotExist:
+            return Response(
+                {"detail": "No availability profile found. Create one first."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+    
+    @action(detail=False, methods=['post'])
+    def set_planned_route(self, request):
+        """Action for driver to set their planned route/destination."""
+        serializer = DriverAvailabilityUpdateSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        
+        try:
+            availability = DriverAvailability.objects.get(driver=request.user)
+            updated_availability = serializer.update(availability, serializer.validated_data)
+            response_serializer = DriverAvailabilitySerializer(updated_availability)
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
+        except DriverAvailability.DoesNotExist:
+            return Response(
+                {"detail": "No availability profile found. Create one first."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+# --- Driver Search ViewSet ---
+class DriverSearchViewSet(viewsets.ViewSet):
+    """
+    ViewSet for searching available drivers near a location.
+    Used by the ride matching system.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    
+    @action(detail=False, methods=['post'])
+    def find_nearby_drivers(self, request):
+        """Find available drivers near a pickup location."""
+        serializer = DriverSearchSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        pickup_lat = float(serializer.validated_data['pickup_lat'])
+        pickup_lng = float(serializer.validated_data['pickup_lng'])
+        max_distance_km = float(serializer.validated_data['max_distance_km'])
+        min_rating = serializer.validated_data.get('min_rating')
+        service_area = serializer.validated_data.get('service_area')
+        limit = serializer.validated_data['limit']
+        
+        # Create pickup point
+        pickup_point = Point(pickup_lng, pickup_lat, srid=4326)
+        
+        # Base queryset for available drivers
+        queryset = DriverAvailability.objects.filter(
+            status=DriverAvailability.AvailabilityStatus.ONLINE,
+            current_location__isnull=False
+        )
+        
+        # Filter by service area if specified
+        if service_area:
+            queryset = queryset.filter(service_area=service_area)
+        
+        # Filter by minimum rating if specified
+        if min_rating:
+            queryset = queryset.filter(average_rating__gte=min_rating)
+        
+        # Calculate distance and filter by max distance
+        queryset = queryset.annotate(
+            distance_km=Distance('current_location', pickup_point) * 111  # Convert to km
+        ).filter(distance_km__lte=max_distance_km)
+        
+        # Order by distance and rating
+        queryset = queryset.order_by('distance_km', '-average_rating')[:limit]
+        
+        # Serialize results
+        serializer = DriverAvailabilitySerializer(queryset, many=True)
+        
+        return Response({
+            'drivers': serializer.data,
+            'total_found': len(serializer.data),
+            'search_params': {
+                'pickup_lat': pickup_lat,
+                'pickup_lng': pickup_lng,
+                'max_distance_km': max_distance_km,
+                'min_rating': min_rating,
+                'service_area': service_area
+            }
+        }, status=status.HTTP_200_OK)
+    
+    @action(detail=False, methods=['post'])
+    def find_drivers_on_route(self, request):
+        """Find drivers who are heading in the same direction as the ride."""
+        serializer = DriverSearchSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        pickup_lat = float(serializer.validated_data['pickup_lat'])
+        pickup_lng = float(serializer.validated_data['pickup_lng'])
+        destination_lat = request.data.get('destination_lat')
+        destination_lng = request.data.get('destination_lng')
+        max_distance_km = float(serializer.validated_data['max_distance_km'])
+        limit = serializer.validated_data['limit']
+        
+        if not destination_lat or not destination_lng:
+            return Response(
+                {"detail": "Destination coordinates are required for route matching."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        destination_lat = float(destination_lat)
+        destination_lng = float(destination_lng)
+        
+        # Create points
+        pickup_point = Point(pickup_lng, pickup_lat, srid=4326)
+        destination_point = Point(destination_lng, destination_lat, srid=4326)
+        
+        # Find drivers with planned routes heading in similar direction
+        queryset = DriverAvailability.objects.filter(
+            status=DriverAvailability.AvailabilityStatus.ONLINE,
+            current_location__isnull=False,
+            planned_destination_lat__isnull=False,
+            planned_destination_lng__isnull=False,
+            is_planned_route_active=True
+        )
+        
+        # Calculate distances
+        queryset = queryset.annotate(
+            distance_to_pickup_km=Distance('current_location', pickup_point) * 111,
+            distance_to_destination_km=Distance('current_location', destination_point) * 111
+        ).filter(
+            distance_to_pickup_km__lte=max_distance_km
+        )
+        
+        # Order by proximity to pickup and route similarity
+        queryset = queryset.order_by('distance_to_pickup_km', '-average_rating')[:limit]
+        
+        # Serialize results
+        serializer = DriverAvailabilitySerializer(queryset, many=True)
+        
+        return Response({
+            'drivers_on_route': serializer.data,
+            'total_found': len(serializer.data),
+            'search_params': {
+                'pickup_lat': pickup_lat,
+                'pickup_lng': pickup_lng,
+                'destination_lat': destination_lat,
+                'destination_lng': destination_lng,
+                'max_distance_km': max_distance_km
+            }
+        }, status=status.HTTP_200_OK)

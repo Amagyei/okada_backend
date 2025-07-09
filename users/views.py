@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-# users/views.py
-=======
->>>>>>> refs/remotes/origin/main
 from rest_framework import viewsets, status, generics
 from rest_framework.views import APIView
 from rest_framework.decorators import action
@@ -91,11 +87,6 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     """
     Allows authenticated users to retrieve and partially update their profile.
     Ghana Card details can only be set once and become immutable.
-<<<<<<< HEAD
-    Also accepts fcm_token for push notifications.
-
-=======
->>>>>>> refs/remotes/origin/main
     """
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
@@ -114,27 +105,12 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
                     {"ghana_card_number": ["Ghana Card number cannot be changed once set."]},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-<<<<<<< HEAD
-        
-
-=======
->>>>>>> refs/remotes/origin/main
 
         if user.ghana_card_image and data.get("ghana_card_image"):
             return Response(
                 {"ghana_card_image": ["Ghana Card image cannot be changed once uploaded."]},
                 status=status.HTTP_400_BAD_REQUEST
             )
-<<<<<<< HEAD
-        
-        # Handle fcm_token
-        if data.get("fcm_token"):
-            user.fcm_token = data["fcm_token"]
-            user.save()
-        
-        
-=======
->>>>>>> refs/remotes/origin/main
 
         serializer = self.get_serializer(user, data=data, partial=True)
         serializer.is_valid(raise_exception=True)

@@ -29,18 +29,10 @@ class UserLoginSerializer(serializers.Serializer):
         trim_whitespace=False,
         write_only=True
     )
-<<<<<<< HEAD
-    fcm_token = serializers.CharField(max_length=255, required=False, allow_blank=True)
-=======
->>>>>>> refs/remotes/origin/main
 
     def validate(self, data):
         phone_number = data.get('phone_number')
         password = data.get('password')
-<<<<<<< HEAD
-        fcm_token = data.get('fcm_token')
-=======
->>>>>>> refs/remotes/origin/main
 
         if not phone_number or not password:
             raise serializers.ValidationError(
@@ -63,12 +55,6 @@ class UserLoginSerializer(serializers.Serializer):
                 _('Unable to log in with provided credentials.'),
                 code='authorization'
             )
-<<<<<<< HEAD
-        if fcm_token:
-            user.fcm_token = fcm_token
-            user.save(update_fields=['fcm_token'])
-=======
->>>>>>> refs/remotes/origin/main
 
         # Optional: Check if user is active
         if not user.is_active:
@@ -77,14 +63,6 @@ class UserLoginSerializer(serializers.Serializer):
                 code='authorization'
             )
 
-<<<<<<< HEAD
-        # Update FCM token if provided
-        if data.get('fcm_token'):
-            user.fcm_token = data['fcm_token']
-            user.save(update_fields=['fcm_token'])
-
-=======
->>>>>>> refs/remotes/origin/main
         # Add the validated user object to the dictionary
         data['user'] = user
         return data

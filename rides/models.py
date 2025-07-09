@@ -4,6 +4,7 @@ from django.db import models
 from django.conf import settings # Use settings.AUTH_USER_MODEL
 from django.utils.translation import gettext_lazy as _
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.contrib.gis.db import models as gis_models
 
 # Ensure users.models is correctly imported if needed elsewhere,
 # but prefer settings.AUTH_USER_MODEL for foreign keys.
@@ -196,3 +197,217 @@ class RidePathCoordinate(models.Model):
     timestamp = models.DateTimeField()
     class Meta:
         ordering = ['timestamp']
+
+
+class DriverAvailability(models.Model):
+    """
+    Model to track driver availability, planned routes, and current status
+    for efficient ride matching and dispatch.
+    """
+    
+    class AvailabilityStatus(models.TextChoices):
+        ONLINE = 'ONLINE', _('Online - Available for rides')
+        OFFLINE = 'OFFLINE', _('Offline - Not available')
+        BUSY = 'BUSY', _('Busy - Currently on a ride')
+        BREAK = 'BREAK', _('On break')
+        MAINTENANCE = 'MAINTENANCE', _('Vehicle maintenance')
+        UNAVAILABLE = 'UNAVAILABLE', _('Temporarily unavailable')
+
+    class ServiceArea(models.TextChoices):
+        ACCRA_CENTRAL = 'ACCRA_CENTRAL', _('Accra Central')
+        ACCRA_NORTH = 'ACCRA_NORTH', _('Accra North')
+        ACCRA_WEST = 'ACCRA_WEST', _('Accra West')
+        ACCRA_EAST = 'ACCRA_EAST', _('Accra East')
+        GREATER_ACCRA = 'GREATER_ACCRA', _('Greater Accra')
+        CUSTOM = 'CUSTOM', _('Custom area')
+
+    # === Driver Relationship ===
+    driver = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='availability',
+        limit_choices_to={'user_type': 'driver'}
+    )
+
+    # === Current Status ===
+    status = models.CharField(
+        max_length=20,
+        choices=AvailabilityStatus.choices,
+        default=AvailabilityStatus.OFFLINE,
+        db_index=True
+    )
+    
+    # === Location Information ===
+    current_location = gis_models.PointField(
+        null=True, 
+        blank=True, 
+        srid=4326,
+        help_text="Current GPS location (longitude, latitude)"
+    )
+    current_address = models.TextField(blank=True, null=True)
+    last_location_update = models.DateTimeField(auto_now=True)
+    
+    # === Service Area & Preferences ===
+    service_area = models.CharField(
+        max_length=20,
+        choices=ServiceArea.choices,
+        default=ServiceArea.ACCRA_CENTRAL
+    )
+    custom_service_area = gis_models.PolygonField(
+        null=True, 
+        blank=True, 
+        srid=4326,
+        help_text="Custom service area polygon (if service_area is CUSTOM)"
+    )
+    max_distance_km = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=10.00,
+        help_text="Maximum distance driver is willing to travel for pickup"
+    )
+    
+    # === Planned Route (for drivers heading to a destination) ===
+    planned_destination_lat = models.DecimalField(
+        max_digits=16, 
+        decimal_places=7, 
+        null=True, 
+        blank=True,
+        help_text="Latitude of driver's planned destination"
+    )
+    planned_destination_lng = models.DecimalField(
+        max_digits=16, 
+        decimal_places=7, 
+        null=True, 
+        blank=True,
+        help_text="Longitude of driver's planned destination"
+    )
+    planned_destination_address = models.TextField(blank=True, null=True)
+    planned_departure_time = models.DateTimeField(null=True, blank=True)
+    planned_arrival_time = models.DateTimeField(null=True, blank=True)
+    
+    # === Availability Schedule ===
+    is_available_24_7 = models.BooleanField(default=False)
+    preferred_start_time = models.TimeField(null=True, blank=True)
+    preferred_end_time = models.TimeField(null=True, blank=True)
+    
+    # === Performance & Preferences ===
+    average_rating = models.DecimalField(
+        max_digits=3, 
+        decimal_places=2, 
+        default=0.00
+    )
+    total_rides_completed = models.PositiveIntegerField(default=0)
+    preferred_ride_types = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="List of preferred ride types: ['short', 'long', 'airport', etc.]"
+    )
+    minimum_fare_preference = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        null=True, 
+        blank=True,
+        help_text="Minimum fare driver prefers to accept"
+    )
+    
+    # === Timestamps ===
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_online_at = models.DateTimeField(null=True, blank=True)
+    last_offline_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('Driver Availability')
+        verbose_name_plural = _('Driver Availabilities')
+        ordering = ['-last_location_update']
+        indexes = [
+            models.Index(fields=['status', 'last_location_update']),
+            models.Index(fields=['service_area', 'status']),
+            models.Index(fields=['average_rating', 'status']),
+        ]
+
+    def __str__(self):
+        return f"{self.driver.get_full_name()} - {self.get_status_display()}"
+
+    def is_available_for_rides(self):
+        """Check if driver is currently available for new rides"""
+        return self.status == self.AvailabilityStatus.ONLINE
+
+    def is_within_service_area(self, lat, lng):
+        """Check if given coordinates are within driver's service area"""
+        if not self.current_location:
+            return False
+            
+        # Simple distance-based check (can be enhanced with polygon checks)
+        from django.contrib.gis.geos import Point
+        from django.contrib.gis.db.models.functions import Distance
+        
+        point = Point(lng, lat, srid=4326)
+        distance_km = self.current_location.distance(point) * 111  # Rough conversion to km
+        
+        return distance_km <= float(self.max_distance_km)
+
+    def update_location(self, lat, lng, address=None):
+        """Update driver's current location"""
+        from django.contrib.gis.geos import Point
+        
+        self.current_location = Point(lng, lat, srid=4326)
+        if address:
+            self.current_address = address
+        self.last_location_update = models.timezone.now()
+        self.save(update_fields=['current_location', 'current_address', 'last_location_update'])
+
+    def go_online(self):
+        """Set driver status to online"""
+        from django.utils import timezone
+        
+        self.status = self.AvailabilityStatus.ONLINE
+        self.last_online_at = timezone.now()
+        self.save(update_fields=['status', 'last_online_at'])
+
+    def go_offline(self):
+        """Set driver status to offline"""
+        from django.utils import timezone
+        
+        self.status = self.AvailabilityStatus.OFFLINE
+        self.last_offline_at = timezone.now()
+        self.save(update_fields=['status', 'last_offline_at'])
+
+    def set_busy(self):
+        """Set driver status to busy (on a ride)"""
+        self.status = self.AvailabilityStatus.BUSY
+        self.save(update_fields=['status'])
+
+    def get_estimated_arrival_time(self, pickup_lat, pickup_lng):
+        """Estimate arrival time to pickup location"""
+        if not self.current_location:
+            return None
+            
+        from django.contrib.gis.geos import Point
+        from django.contrib.gis.db.models.functions import Distance
+        
+        pickup_point = Point(pickup_lng, pickup_lat, srid=4326)
+        distance_km = self.current_location.distance(pickup_point) * 111
+        
+        # Rough estimation: 30 km/h average speed in city
+        estimated_minutes = (distance_km / 30) * 60
+        
+        from django.utils import timezone
+        return timezone.now() + timezone.timedelta(minutes=estimated_minutes)
+
+    @property
+    def is_planned_route_active(self):
+        """Check if driver has an active planned route"""
+        if not self.planned_destination_lat or not self.planned_departure_time:
+            return False
+            
+        from django.utils import timezone
+        now = timezone.now()
+        
+        # Check if current time is within planned route timeframe
+        if self.planned_arrival_time:
+            return self.planned_departure_time <= now <= self.planned_arrival_time
+        else:
+            # If no arrival time, assume route is active for 2 hours after departure
+            route_end = self.planned_departure_time + timezone.timedelta(hours=2)
+            return self.planned_departure_time <= now <= route_end

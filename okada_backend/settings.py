@@ -1,17 +1,10 @@
-<<<<<<< HEAD
-# okada_backend/okada_backend/settings.py
-=======
->>>>>>> refs/remotes/origin/main
 from decimal import Decimal
 from pathlib import Path
 from datetime import timedelta
 import os
 from dotenv import load_dotenv
-<<<<<<< HEAD
 import firebase_admin
 from firebase_admin import credentials
-=======
->>>>>>> refs/remotes/origin/main
 
 load_dotenv()
 
@@ -36,35 +29,26 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-<<<<<<< HEAD
     'django.contrib.gis',
     'django_celery_beat',
 
-=======
->>>>>>> refs/remotes/origin/main
     
     # Third party apps
     'rest_framework',
     'corsheaders',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
-<<<<<<< HEAD
     'channels',
     'channels_redis',
-=======
->>>>>>> refs/remotes/origin/main
-    
+ 
     # Local apps
     'authentication',
     'users',
-<<<<<<< HEAD
     'rides.apps.RidesConfig',
     'payments',
     'notifications',
-=======
     'rides',
     'payments',
->>>>>>> refs/remotes/origin/main
     # 'analytics',
 ]
 
@@ -97,7 +81,6 @@ TEMPLATES = [
     },
 ]
 
-<<<<<<< HEAD
 ASGI_APPLICATION = 'okada_backend.asgi.application'
 
 # GDAL
@@ -127,16 +110,9 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD'),
         'HOST': os.getenv('DB_HOST'),
         'PORT': os.getenv('DB_PORT'),
-=======
-WSGI_APPLICATION = 'okada_backend.wsgi.application'
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
->>>>>>> refs/remotes/origin/main
     }
 }
+WSGI_APPLICATION = 'okada_backend.wsgi.application'
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -251,22 +227,6 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
         },
-<<<<<<< HEAD
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-=======
-        # Add file handler for production
-        # 'file': {
-        #     'level': 'INFO',
-        #     'class': 'logging.FileHandler',
-        #     'filename': BASE_DIR / 'logs/django.log',
-        # },
     },
     'root': {
         'handlers': ['console'], # Add 'file' for production
@@ -275,12 +235,10 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['console'], # Add 'file' for production
->>>>>>> refs/remotes/origin/main
             'level': os.getenv('DJANGO_LOG_LEVEL', 'INFO'),
             'propagate': False,
         },
     },
-<<<<<<< HEAD
 }
 
 # firebase settings 
@@ -304,6 +262,4 @@ CHANNEL_LAYERS = {
           'hosts': [('127.0.0.1', 6379)],
         },
     },
-=======
->>>>>>> refs/remotes/origin/main
 }
