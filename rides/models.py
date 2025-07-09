@@ -414,4 +414,8 @@ class DriverAvailability(models.Model):
         else:
             # If no arrival time, assume route is active for 2 hours after departure
             route_end = self.planned_departure_time + timezone.timedelta(hours=2)
+<<<<<<< HEAD
             return self.planned_departure_time <= now <= route_end
+=======
+            return self.planned_departure_time <= now <= route_end
+>>>>>>> 8bab12e (task)
