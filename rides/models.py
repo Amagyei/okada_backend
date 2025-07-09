@@ -57,17 +57,10 @@ class Ride(models.Model):
 
     # === Status & Timestamps ===
     status = models.CharField(
-<<<<<<< HEAD
         max_length=25,
         choices=StatusChoices.choices,
         default=StatusChoices.REQUESTED,
         db_index=True
-=======
-        max_length=25, # Increased length for new choices
-        choices=StatusChoices.choices,
-        default=StatusChoices.REQUESTED,
-        db_index=True # Index status for faster filtering
->>>>>>> refs/remotes/origin/main
     )
     payment_status = models.CharField(
         max_length=20,
@@ -99,10 +92,6 @@ class Ride(models.Model):
     # Add other potential fare components (surge, tolls, etc.)
     total_fare = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     cancellation_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-<<<<<<< HEAD
-=======
-
->>>>>>> refs/remotes/origin/main
     # === Cancellation Info ===
     cancellation_reason = models.TextField(null=True, blank=True)
 
@@ -197,7 +186,6 @@ class SavedLocation(models.Model):
 
     def __str__(self):
         user_info = self.user.username if self.user else 'N/A'
-<<<<<<< HEAD
         return f"{self.name} ({self.get_location_type_display()}) - {user_info}"
 
 
@@ -208,6 +196,3 @@ class RidePathCoordinate(models.Model):
     timestamp = models.DateTimeField()
     class Meta:
         ordering = ['timestamp']
-=======
-        return f"{self.name} ({self.get_location_type_display()}) - {user_info}"
->>>>>>> refs/remotes/origin/main
