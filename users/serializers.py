@@ -10,7 +10,11 @@ class UserSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'username', 'email', 'first_name', 'last_name', 'phone_number',
             'profile_picture', 'user_type', 'rating', 'total_trips', 'is_phone_verified',
+<<<<<<< HEAD
             'is_email_verified', 'emergency_contact', 'emergency_contact_name', 'fcm_token'
+=======
+            'is_email_verified', 'emergency_contact', 'emergency_contact_name'
+>>>>>>> refs/remotes/origin/main
         )
         read_only_fields = ('id', 'rating', 'total_trips', 'is_phone_verified', 'is_email_verified')
 
@@ -43,9 +47,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = User
         # Ensure all fields needed at signup are listed
         fields = (
+<<<<<<< HEAD
             'username', 'email', 'password', 
             'first_name', 'last_name', 'phone_number',
             'user_type', 'emergency_contact', 'emergency_contact_name', 
+=======
+            'username', 'email', 'password', # 'confirm_password',
+            'first_name', 'last_name', 'phone_number', # Make sure phone_number is here
+            'user_type', 'emergency_contact', 'emergency_contact_name'
+>>>>>>> refs/remotes/origin/main
         )
         
     

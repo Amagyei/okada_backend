@@ -8,6 +8,7 @@ from django.utils import timezone
 from rest_framework import viewsets, status, mixins, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+<<<<<<< HEAD
 import logging
 
 # --- Notification imports ---
@@ -18,6 +19,8 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
 User = get_user_model()
+=======
+>>>>>>> refs/remotes/origin/main
 
 # Import models from the current app
 from .models import Ride, RideRating, SavedLocation
@@ -39,6 +42,7 @@ from users.permissions import IsRider, IsDriver
 # Placeholder Permissions (Remove or replace with actual imports from permissions.py)
 # It's better to define these in users/permissions.py and rides/permissions.py
 # and import them here. Keeping them here temporarily for completeness if not created yet.
+<<<<<<< HEAD
 
 
 # 
@@ -46,6 +50,8 @@ from users.permissions import IsRider, IsDriver
 # TODO: notify driver when rider calclesla dn viseversa 
   
 #   wrap fcm send calls in a try except and log failures 
+=======
+>>>>>>> refs/remotes/origin/main
 class IsOwner(permissions.BasePermission):
     """Placeholder: Allow only owner of object."""
     def has_object_permission(self, request, view, obj):
@@ -85,7 +91,11 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
     """
     serializer_class = RideSerializer # Default for list view
     permission_classes = [permissions.IsAuthenticated] # Base permission for all actions
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> refs/remotes/origin/main
     def get_queryset(self):
         """
         Filter rides based on user type.
@@ -133,7 +143,13 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
             'cancel_ride': RideCancelSerializer,
             'rate_ride': RideRatingSerializer,
             'complete_trip': RideCompleteSerializer,
+<<<<<<< HEAD
         }
+=======
+
+        }
+        # Return specific serializer for the action, or default (RideSerializer for list)
+>>>>>>> refs/remotes/origin/main
         return action_serializers.get(self.action, super().get_serializer_class())
 
     # --- Rider Actions ---
@@ -152,12 +168,18 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
         serializer = self.get_serializer(data=request.data) # Gets RideCreateSerializer
         serializer.is_valid(raise_exception=True)
 
+<<<<<<< HEAD
+=======
+       
+
+>>>>>>> refs/remotes/origin/main
         # Save the ride request, associating rider and setting status/fare
         ride = serializer.save(
             rider=request.user,
             status=Ride.StatusChoices.REQUESTED,   
         )
 
+<<<<<<< HEAD
         # Notify all drivers about new ride request via FCM
         # TODO: NOTIFY ONLY NEARBY DRIVERS 
         for driver in User.objects.filter(user_type='driver').exclude(fcm_token__isnull=True).exclude(fcm_token=''):
@@ -219,6 +241,8 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
         except Exception as e:
             logging.error(f"Failed to send WebSocket notification for ride {ride.id}: {e}")
 
+=======
+>>>>>>> refs/remotes/origin/main
         # Return detailed data for the newly created ride
         response_serializer = RideDetailSerializer(ride, context={'request': request})
         headers = self.get_success_headers(response_serializer.data)
@@ -287,6 +311,7 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
             cancellation_fee = cancellation_fee,
         )
 
+<<<<<<< HEAD
         # Notify assigned driver if rider cancels
         if new_status == Ride.StatusChoices.CANCELLED_BY_RIDER and ride.driver and ride.driver.fcm_token:
             try:
@@ -332,6 +357,8 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
         except Exception as e:
             logging.error(f"Failed to send WebSocket notification for cancelled ride {ride.id}: {e}")
 
+=======
+>>>>>>> refs/remotes/origin/main
         # Return updated ride details
         response_serializer = RideDetailSerializer(ride, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -368,6 +395,7 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
             ride = ride_to_update
 
         # TODO: Send notification to Rider that ride was accepted
+<<<<<<< HEAD
         # Notify Rider that ride was accepted
         if ride.rider and ride.rider.fcm_token:
             try:
@@ -399,6 +427,8 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
             logging.info(f"WebSocket notification sent to drivers group for accepted ride {ride.id}")
         except Exception as e:
             logging.error(f"Failed to send WebSocket notification for accepted ride {ride.id}: {e}")
+=======
+>>>>>>> refs/remotes/origin/main
 
         response_serializer = RideDetailSerializer(ride, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -421,6 +451,7 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
 
          # Define valid transitions and associated actions/timestamps
          if new_status == Ride.StatusChoices.ON_ROUTE_TO_PICKUP and ride.status == Ride.StatusChoices.ACCEPTED:
+<<<<<<< HEAD
               valid_transition = True
               # Notify Rider that driver is en route
               if ride.rider and ride.rider.fcm_token:
@@ -466,6 +497,13 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
                       logging.info(f"Notification task dispatched for rider {ride.rider.id}: {result}")
                   except Exception as e:
                       logging.error(f"Failed to dispatch notification for rider {ride.rider.id}: {e}")
+=======
+              valid_transition = True; print("TODO: Notify Rider - Driver En Route")
+         elif new_status == Ride.StatusChoices.ARRIVED_AT_PICKUP and ride.status == Ride.StatusChoices.ON_ROUTE_TO_PICKUP:
+              ride.arrived_at_pickup_at = now; update_fields.append('arrived_at_pickup_at'); valid_transition = True; print("TODO: Notify Rider - Driver Arrived")
+         elif new_status == Ride.StatusChoices.ON_TRIP and ride.status == Ride.StatusChoices.ARRIVED_AT_PICKUP:
+              ride.trip_started_at = now; update_fields.append('trip_started_at'); valid_transition = True; print("TODO: Notify Rider - Trip Started")
+>>>>>>> refs/remotes/origin/main
 
          if not valid_transition:
              if new_status == ride.status: return Response({"detail": f"Ride is already in '{ride.get_status_display()}' state."}, status=status.HTTP_400_BAD_REQUEST)
@@ -514,6 +552,7 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
 
         # TODO: Trigger payment processing (e.g., queue Celery task)
         print("TODO: Trigger payment processing.")
+<<<<<<< HEAD
         # Notify Rider that trip is completed
         if ride.rider and ride.rider.fcm_token:
             try:
@@ -526,6 +565,9 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
                 logging.info(f"Notification task dispatched for rider {ride.rider.id}: {result}")
             except Exception as e:
                 logging.error(f"Failed to dispatch notification for rider {ride.rider.id}: {e}")
+=======
+        # TODO: Send notification to Rider (Trip Completed, Fare)
+>>>>>>> refs/remotes/origin/main
 
         response_serializer = RideDetailSerializer(ride, context={'request': request})
         return Response(response_serializer.data, status=status.HTTP_200_OK)

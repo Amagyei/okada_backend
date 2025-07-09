@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 # authentication/views.py
+=======
+>>>>>>> refs/remotes/origin/main
 from django.shortcuts import render
 from rest_framework import status, views, generics
 from rest_framework.response import Response
@@ -40,20 +43,31 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 class UserLoginView(views.APIView):
+<<<<<<< HEAD
     """ takes phone_number and password, and fcm tokenand returns access and refresh tokens"""
+=======
+    """ takes phone_number and password and returns access and refresh tokens"""
+>>>>>>> refs/remotes/origin/main
     permission_classes = (AllowAny,)
     serializer_class = UserLoginSerializer
 
     def post(self, request, *args, **kwargs):
+<<<<<<< HEAD
         print(f"UserLoginView: {request.data}")
+=======
+>>>>>>> refs/remotes/origin/main
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         refresh = RefreshToken.for_user(user)
+<<<<<<< HEAD
         fcm_token = request.data.get('fcm_token')
         if fcm_token:
             user.fcm_token = fcm_token
             user.save(update_fields=['fcm_token'])
+=======
+
+>>>>>>> refs/remotes/origin/main
         
         response_data = {
             'refresh': str(refresh),
@@ -171,6 +185,7 @@ class LogoutView(generics.GenericAPIView):
             print(f"Logout Error: {e}") # Log the error
             # Avoid revealing specific token errors
             return Response({"detail": "Invalid token or request."}, status=status.HTTP_400_BAD_REQUEST)
+<<<<<<< HEAD
 
 
 class UserTokenRefreshView(TokenRefreshView):
@@ -189,3 +204,5 @@ class UserTokenRefreshView(TokenRefreshView):
             user.save(update_fields=["fcm_token"])
 
         return Response(data, status=status.HTTP_200_OK)
+=======
+>>>>>>> refs/remotes/origin/main

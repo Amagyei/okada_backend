@@ -1,5 +1,9 @@
 from django.contrib.auth.models import AbstractUser
+<<<<<<< HEAD
 from django.contrib.gis.db import models
+=======
+from django.db import models
+>>>>>>> refs/remotes/origin/main
 from django.utils.translation import gettext_lazy as _
 
 class User(AbstractUser):
@@ -18,11 +22,18 @@ class User(AbstractUser):
     is_email_verified = models.BooleanField(default=False)
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
     total_trips = models.IntegerField(default=0)
+<<<<<<< HEAD
     fcm_token = models.CharField(max_length=255, null=True, blank=True)
     
     # Driver-specific fields
     is_online = models.BooleanField(default=False)
     current_location = models.PointField(null=True, blank=True, srid=4326, help_text="Current GPS location (longitude, latitude)")
+=======
+    
+    # Driver-specific fields
+    is_online = models.BooleanField(default=False)
+    current_location = models.JSONField(null=True, blank=True)
+>>>>>>> refs/remotes/origin/main
     vehicle_type = models.CharField(max_length=50, null=True, blank=True)
     vehicle_number = models.CharField(max_length=20, null=True, blank=True)
     vehicle_color = models.CharField(max_length=20, null=True, blank=True)

@@ -78,7 +78,11 @@ class RideSerializer(serializers.ModelSerializer):
             'id', 'rider', 'driver', 'status', 'status_display',
             'payment_status', 'payment_status_display',
             'pickup_address', 'destination_address', # Show addresses for quick view
+<<<<<<< HEAD
             'estimated_fare', 'base_fare', 'duration_fare', 'distance_fare', 'total_fare', # Show fares
+=======
+            'estimated_fare', 'estimated_fare', # Show fares
+>>>>>>> refs/remotes/origin/main
             'requested_at', 'completed_at', # Key timestamps
         )
         read_only_fields = fields # All fields read-only for list display
