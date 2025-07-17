@@ -16,6 +16,8 @@ from notifications.tasks import send_fcm_notification_task
 # Add WebSocket imports
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.contrib.gis.db.models.functions import Distance
+from django.contrib.gis.measure import D
 
 User = get_user_model()
 
@@ -85,38 +87,28 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
         """
         Filter rides based on user type.
         - Riders see their requested/ongoing rides.
-        - Drivers see rides assigned to them AND available rides (requested, unassigned).
+        - Drivers see rides assigned to them AND available rides (requested, unassigned, within 15km, ordered by proximity).
         """
         user = self.request.user
         if not user.is_authenticated:
             return Ride.objects.none()
 
         if user.user_type == 'driver':
-            # Combine rides assigned to this driver OR rides that are available
             assigned_rides = Q(driver=user)
-            available_rides = Q(status=Ride.StatusChoices.REQUESTED, driver__isnull=True)
-
-            # TODO: Refine 'available_rides' with GeoDjango spatial query
-            # Requires driver's current location (PointField) and ride pickup_location (PointField)
-            # Example (requires GeoDjango setup):
-            # from django.contrib.gis.db.models.functions import Distance
-            # from django.contrib.gis.measure import D # Distance unit object
-            # driver_location = user.current_location # Assuming user model has PointField
-            # if driver_location:
-            #     radius_km = 5 # Example search radius
-            #     available_rides = available_rides & Q(pickup_location__dwithin=(driver_location, D(km=radius_km)))
-            # else:
-            #     available_rides = Q(pk__in=[]) # No available rides if driver location unknown
-
-            queryset = Ride.objects.filter(assigned_rides | available_rides)
-
+            # Only show available rides within 15km of driver's current location, ordered by proximity
+            if hasattr(user, 'current_location') and user.current_location:
+                available_rides = Q(status=Ride.StatusChoices.REQUESTED, driver__isnull=True) & Q(pickup_location__distance_lte=(user.current_location, D(km=15)))
+                queryset = Ride.objects.annotate(
+                    distance_to_pickup=Distance('pickup_location', user.current_location)
+                ).filter(assigned_rides | available_rides).order_by('distance_to_pickup')
+            else:
+                # If no location, only show assigned rides
+                queryset = Ride.objects.filter(assigned_rides)
         elif user.user_type == 'rider':
-            # Show rides requested by the rider
             queryset = Ride.objects.filter(rider=user)
         else:
-             queryset = Ride.objects.none()
+            queryset = Ride.objects.none()
 
-        # Optimize database query by fetching related user objects
         return queryset.select_related('rider', 'driver').distinct()
 
     def get_serializer_class(self):

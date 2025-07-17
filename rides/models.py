@@ -56,6 +56,10 @@ class Ride(models.Model):
     destination_lng = models.DecimalField(max_digits=16, decimal_places=7, help_text="Longitude of destination")
     destination_address = models.TextField(blank=True, null=True, help_text="Textual address or description of destination")
 
+    # --- GeoDjango/PostGIS spatial fields (for spatial queries) ---
+    pickup_location = gis_models.PointField(null=True, blank=True, srid=4326, help_text="Pickup location as Point (longitude, latitude)")
+    destination = gis_models.PointField(null=True, blank=True, srid=4326, help_text="Destination as Point (longitude, latitude)")
+
     # === Status & Timestamps ===
     status = models.CharField(
         max_length=25,

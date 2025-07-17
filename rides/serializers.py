@@ -65,23 +65,45 @@ class RideRatingSerializer(serializers.ModelSerializer):
 # Serializer for displaying basic Ride info (e.g., in lists)
 class RideSerializer(serializers.ModelSerializer):
     """Basic serializer for displaying Ride list information."""
-    # Use a specific public serializer for nested user display
     rider = UserPublicSerializer(read_only=True)
-    driver = UserPublicSerializer(read_only=True, allow_null=True) # Driver can be null
-    # Add display values for choices fields
+    driver = UserPublicSerializer(read_only=True, allow_null=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     payment_status_display = serializers.CharField(source='get_payment_status_display', read_only=True)
+
+    # Expose lat/lng from PointFields for API clients
+    pickup_lat = serializers.SerializerMethodField()
+    pickup_lng = serializers.SerializerMethodField()
+    destination_lat = serializers.SerializerMethodField()
+    destination_lng = serializers.SerializerMethodField()
+
+    def get_pickup_lat(self, obj):
+        if obj.pickup_location:
+            return float(obj.pickup_location.y)
+        return None
+    def get_pickup_lng(self, obj):
+        if obj.pickup_location:
+            return float(obj.pickup_location.x)
+        return None
+    def get_destination_lat(self, obj):
+        if obj.destination:
+            return float(obj.destination.y)
+        return None
+    def get_destination_lng(self, obj):
+        if obj.destination:
+            return float(obj.destination.x)
+        return None
 
     class Meta:
         model = Ride
         fields = (
             'id', 'rider', 'driver', 'status', 'status_display',
             'payment_status', 'payment_status_display',
-            'pickup_address', 'destination_address', # Show addresses for quick view
-            'estimated_fare', 'base_fare', 'duration_fare', 'distance_fare', 'total_fare', # Show fares
-            'requested_at', 'completed_at', # Key timestamps
+            'pickup_address', 'destination_address',
+            'pickup_lat', 'pickup_lng', 'destination_lat', 'destination_lng',
+            'estimated_fare', 'base_fare', 'duration_fare', 'distance_fare', 'total_fare',
+            'requested_at', 'completed_at',
         )
-        read_only_fields = fields # All fields read-only for list display
+        read_only_fields = fields
 
 
 # Serializer for displaying detailed Ride info (e.g., on retrieve)
@@ -116,7 +138,20 @@ class RideCreateSerializer(serializers.ModelSerializer):
                 except Exception:
                     pass
         return super().to_internal_value(data)
-    
+
+    def create(self, validated_data):
+        from django.contrib.gis.geos import Point
+        pickup_lat = validated_data.get('pickup_location_lat')
+        pickup_lng = validated_data.get('pickup_location_lng')
+        destination_lat = validated_data.get('destination_lat')
+        destination_lng = validated_data.get('destination_lng')
+        # Set PointFields
+        if pickup_lat is not None and pickup_lng is not None:
+            validated_data['pickup_location'] = Point(float(pickup_lng), float(pickup_lat), srid=4326)
+        if destination_lat is not None and destination_lng is not None:
+            validated_data['destination'] = Point(float(destination_lng), float(destination_lat), srid=4326)
+        return super().create(validated_data)
+
     # Rider provides location details
     pickup_location_lat = serializers.DecimalField(max_digits=16, decimal_places=7, required=True, coerce_to_string=False)
     pickup_location_lng = serializers.DecimalField(max_digits=16, decimal_places=7, required=True, coerce_to_string=False)

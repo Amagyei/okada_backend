@@ -47,8 +47,6 @@ INSTALLED_APPS = [
     'rides.apps.RidesConfig',
     'payments',
     'notifications',
-    'rides',
-    'payments',
     # 'analytics',
 ]
 
