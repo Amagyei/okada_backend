@@ -354,40 +354,30 @@ LOGGING = {
 # ==============================================================================
 import firebase_admin
 from firebase_admin import credentials
+# Path to the JSON you’ve uploaded
+FIREBASE_ADMIN_SDK_CREDENTIALS_PATH = os.path.join(
+    BASE_DIR,
+    'okada_backend',
+    'okada-457703-firebase-adminsdk-fbsvc-9202cfff43.json'
+)
 
-if DEBUG:
-    FIREBASE_ADMIN_SDK_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'okada_backend/okada-457703-firebase-adminsdk-fbsvc-9202cfff43.json')
-    if os.path.exists(FIREBASE_ADMIN_SDK_CREDENTIALS_PATH):
-        if not firebase_admin._apps: # Check if Firebase Admin SDK is already initialized
-            try:
-                cred = credentials.Certificate(FIREBASE_ADMIN_SDK_CREDENTIALS_PATH)
-                firebase_admin.initialize_app(cred)
-                print("Firebase Admin SDK initialized successfully from local file (DEBUG mode).")
-            except Exception as e:
-                print(f"ERROR: Firebase initialization failed from local file: {e}")
-        else:
-            print("Firebase Admin SDK already initialized.")
-    else:
-        print(f"WARNING: Firebase Admin SDK credentials file not found at {FIREBASE_ADMIN_SDK_CREDENTIALS_PATH}. Push notifications may not work in DEBUG mode.")
+if os.path.exists(FIREBASE_ADMIN_SDK_CREDENTIALS_PATH):
+    # File-based credentials (works in both DEBUG and production)
+    if not firebase_admin._apps:
+        cred = credentials.Certificate(FIREBASE_ADMIN_SDK_CREDENTIALS_PATH)
+        firebase_admin.initialize_app(cred)
+        print(f"Firebase Admin SDK initialized from file: {FIREBASE_ADMIN_SDK_CREDENTIALS_PATH}")
 else:
+    # 12-factor style: load the JSON blob from an env var
     FIREBASE_CREDENTIALS_JSON = os.environ.get('FIREBASE_CREDENTIALS_JSON')
     if FIREBASE_CREDENTIALS_JSON:
-        try:
+        if not firebase_admin._apps:
             cred_dict = json.loads(FIREBASE_CREDENTIALS_JSON)
-            if not firebase_admin._apps:
-                cred = credentials.Certificate(cred_dict)
-                firebase_admin.initialize_app(cred)
-                print("Firebase Admin SDK initialized successfully from environment variable (PRODUCTION).")
-            else:
-                print("Firebase Admin SDK already initialized (PRODUCTION).")
-        except json.JSONDecodeError:
-            print("ERROR: Invalid Firebase credentials JSON in FIREBASE_CREDENTIALS_JSON environment variable (PRODUCTION).")
-        except Exception as e:
-            print(f"ERROR: Firebase initialization failed from environment variable (PRODUCTION): {e}")
+            cred = credentials.Certificate(cred_dict)
+            firebase_admin.initialize_app(cred)
+            print("Firebase Admin SDK initialized from FIREBASE_CREDENTIALS_JSON env var.")
     else:
-        print("WARNING: FIREBASE_CREDENTIALS_JSON environment variable not found. Push notifications will not work in production.")
-
-
+        print("WARNING: No Firebase credentials found (file, or FIREBASE_CREDENTIALS_JSON). Push notifications won’t work.")
 # ==============================================================================
 # Channel Layer Settings (for Django Channels with Redis)
 # =============================================================================

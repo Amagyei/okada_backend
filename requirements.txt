@@ -17,3 +17,5 @@ psycopg2-binary
 psycopg
 psycopg2
 dj-database-url
+firebase-admin
+whitenoise
