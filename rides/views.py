@@ -95,14 +95,15 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
 
         if user.user_type == 'driver':
             assigned_rides = Q(driver=user)
-            # Only show available rides within 15km of driver's current location, ordered by proximity
             if hasattr(user, 'current_location') and user.current_location:
                 available_rides = Q(status=Ride.StatusChoices.REQUESTED, driver__isnull=True) & Q(pickup_location__distance_lte=(user.current_location, D(km=15)))
+                print(f"Available rides: {available_rides}")
                 queryset = Ride.objects.annotate(
                     distance_to_pickup=Distance('pickup_location', user.current_location)
                 ).filter(assigned_rides | available_rides).order_by('distance_to_pickup')
             else:
                 # If no location, only show assigned rides
+                print(f"No location, only showing assigned rides")
                 queryset = Ride.objects.filter(assigned_rides)
         elif user.user_type == 'rider':
             queryset = Ride.objects.filter(rider=user)
@@ -176,11 +177,11 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
                         "ride_data": {
                             "id": ride.id,
                             "status": ride.status,
-                            "pickup_location_lat": ride.pickup_location_lat,
-                            "pickup_location_lng": ride.pickup_location_lng,
+                            "pickup_location_lat": float(ride.pickup_location_lat),
+                            "pickup_location_lng": float(ride.pickup_location_lng),
                             "pickup_address": ride.pickup_address,
-                            "destination_lat": ride.destination_lat,
-                            "destination_lng": ride.destination_lng,
+                            "destination_lat": float(ride.destination_lat),
+                            "destination_lng": float(ride.destination_lng),
                             "destination_address": ride.destination_address,
                             "estimated_fare": str(ride.estimated_fare) if ride.estimated_fare else "0.00",
                             "requested_at": ride.requested_at.isoformat(),
@@ -194,8 +195,11 @@ class RideViewSet(mixins.CreateModelMixin, # For POST /api/rides/
                                 "email": ride.rider.email,
                                 "user_type": ride.rider.user_type,
                                 "is_online": ride.rider.is_online,
-                                "profile_picture": ride.rider.profile_picture,
-                                "current_location": ride.rider.current_location,
+                                "profile_picture": str(ride.rider.profile_picture.url) if ride.rider.profile_picture else None,
+                                "current_location": {
+                                    "lat": ride.rider.current_location.y,
+                                    "lng": ride.rider.current_location.x,
+                                } if ride.rider.current_location else None,
                                 "fcm_token": ride.rider.fcm_token,
                                 "vehicle_model": ride.rider.vehicle_model,
                                 "vehicle_number": ride.rider.vehicle_number,

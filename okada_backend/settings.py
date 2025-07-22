@@ -53,23 +53,31 @@ DATABASES = {
 # ==============================================================================
 
 INSTALLED_APPS = [
+    # Local apps 
+    'users',
+    'authentication',
+    'rides',
+    'payments',
+    'notifications',
+
+    # Django core and contrib apps
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.gis', # Required for PostGIS
+    'django.contrib.gis',  # Required for PostGIS
     'django_celery_beat',
 
-    # Third party apps
+    # Third-party apps
     'rest_framework',
     'corsheaders',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'channels',
-    'channels_redis', # For Redis channel layer
-    'whitenoise.runserver_nostatic', # For serving static files in development with `runserver`
+    'channels_redis',  # For Redis channel layer
+    'whitenoise.runserver_nostatic',  # For serving static files in development with `runserver`
     # 'storages', # Only needed if you plan to use DigitalOcean Spaces for media locally
 ]
 
@@ -79,9 +87,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    # WhiteNoise is mostly for production static file serving, but it doesn't hurt in dev.
-    # If you only use `runserver`, `whitenoise.runserver_nostatic` in INSTALLED_APPS handles it.
-    # 'whitenoise.middleware.WhiteNoiseMiddleware', # Commented out for a common local setup
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',

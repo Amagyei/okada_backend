@@ -1,11 +1,14 @@
 # okada_backend/asgi.py
 import os
+
+# Ensure the settings module is set **before** Django import/setup
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "okada_backend.settings")
+
 import django
 django.setup()
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "okada_backend.settings")
-
 from django.core.asgi import get_asgi_application
+
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 from notifications.routing import websocket_urlpatterns
@@ -21,5 +24,4 @@ base_asgi_app = ProtocolTypeRouter({
     ),
 })
 
-# Wrap the entire ASGI app with JWT middleware
 application = JWTAuthMiddleware(base_asgi_app)

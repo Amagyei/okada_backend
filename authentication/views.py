@@ -40,43 +40,97 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 class UserLoginView(views.APIView):
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
+
     """ takes phone_number and password and returns access and refresh tokens"""
->>>>>>> refs/remotes/origin/main
-=======
->>>>>>> 8bab12e (task)
     permission_classes = (AllowAny,)
     serializer_class = UserLoginSerializer
-
+    
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-        refresh = RefreshToken.for_user(user)
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
+        print(f"User requesting login: {request.user}")
+        print(f"Request data: {request.data}")
+        try:
+            # Validate request data
+            serializer = self.serializer_class(data=request.data)
+            if not serializer.is_valid():
+                print(f"Serializer errors: {serializer.errors}")
+                return Response({
+                    'error': 'Invalid login credentials',
+                    'details': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
 
->>>>>>> refs/remotes/origin/main
-=======
->>>>>>> 8bab12e (task)
-        
-        response_data = {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-            'user': {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'phone_number': user.phone_number,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'user_type': user.user_type,
-            }
-        }
-        return Response(response_data, status=status.HTTP_200_OK)
+            # Get user from validated data
+            try:
+                user = serializer.validated_data['user']
+            except KeyError:
+                print(f"User validation failed")
+                return Response({
+                    'error': 'User validation failed',
+                    'details': 'Could not authenticate user with provided credentials'
+                }, status=status.HTTP_401_UNAUTHORIZED)
+
+            # -------------------------------------------------------------
+            # OPTIONAL USER TYPE VALIDATION
+            # -------------------------------------------------------------
+            # The mobile apps can send either a body field `user_type` OR a
+            # header  `X-USER-TYPE` (case-insensitive). If provided, we
+            # validate it against the actual `user.user_type`. This prevents
+            # riders from logging in on the driver app and vice-versa. If the
+            # client does not provide the hint we assume no restriction (to
+            # maintain backwards compatibility).
+
+            # 1) Check JSON body
+            requested_user_type = request.data.get('user_type')
+
+            # 2) Fallback to custom header (e.g. X-USER-TYPE: driver)
+            if not requested_user_type:
+                requested_user_type = request.headers.get('X-USER-TYPE')
+
+            if requested_user_type and requested_user_type.lower() != user.user_type.lower():
+                return Response(
+                    {
+                        'error': 'User type mismatch',
+                        'details': f"This account is of type '{user.user_type}', but '{requested_user_type}' access was requested."
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # -------------------------------------------------------------
+            # Generate tokens
+            try:
+                refresh = RefreshToken.for_user(user)
+            except Exception as e:
+                return Response({
+                    'error': 'Token generation failed',
+                    'details': str(e)
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            # Prepare response data
+            try:
+                response_data = {
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                    'user': {
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email,
+                        'phone_number': user.phone_number,
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'user_type': user.user_type,
+                    }
+                }
+                return Response(response_data, status=status.HTTP_200_OK)
+            except AttributeError as e:
+                return Response({
+                    'error': 'User data error',
+                    'details': f'Missing required user attribute: {str(e)}'
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        except Exception as e:
+            return Response({
+                'error': 'Login failed',
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 OTP_RATE_LIMIT_DURATION = getattr(settings, 'OTP_RATE_LIMIT_DURATION', 60)
 
